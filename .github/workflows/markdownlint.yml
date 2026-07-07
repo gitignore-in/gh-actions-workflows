@@ -1,0 +1,52 @@
+name: Reusable markdownlint
+
+on:
+  workflow_call:
+    inputs:
+      globs:
+        description: >-
+          File glob(s) passed to markdownlint-cli2. The value is word-split
+          and glob-expanded by the shell, so multiple globs can be separated
+          by spaces. Paths containing spaces are not supported.
+        required: false
+        type: string
+        default: "*.md"
+      markdownlint-version:
+        description: markdownlint-cli2 release version.
+        required: false
+        type: string
+        default: "0.18.1"
+
+permissions:
+  contents: read
+
+jobs:
+  markdownlint:
+    name: Markdownlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: "24"
+
+      - name: Run markdownlint-cli2
+        env:
+          MARKDOWNLINT_GLOBS: ${{ inputs.globs }}
+          MARKDOWNLINT_VERSION: ${{ inputs.markdownlint-version }}
+        run: |
+          set -eu
+          set -o pipefail
+
+          if ! printf '%s' "$MARKDOWNLINT_VERSION" | grep -Eq '^[0-9]+[.][0-9]+[.][0-9]+$'; then
+            echo "::error::markdownlint-version must be a release version like 0.18.1"
+            exit 2
+          fi
+
+          # MARKDOWNLINT_GLOBS is intentionally unquoted so caller globs keep expanding.
+          # shellcheck disable=SC2086
+          npx --yes "markdownlint-cli2@$MARKDOWNLINT_VERSION" $MARKDOWNLINT_GLOBS

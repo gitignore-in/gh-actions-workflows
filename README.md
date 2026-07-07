@@ -5,6 +5,7 @@ Reusable GitHub Actions workflows for gitignore-in repositories.
 ## Workflows
 
 - `actionlint.yml`: runs `rhysd/actionlint` against the caller repository.
+- `markdownlint.yml`: runs `markdownlint-cli2` against the caller repository.
 - `spellcheck.yml`: runs `crate-ci/typos` against the caller repository.
 
 Caller repositories should keep only small workflow files that define the
@@ -81,3 +82,21 @@ Local checks:
 actionlint
 typos
 ```
+
+### Markdownlint
+
+```yaml
+name: Markdownlint
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  markdownlint:
+    uses: gitignore-in/gh-actions-workflows/.github/workflows/markdownlint.yml@main
+    with:
+      globs: "README.md docs/*.md"
+```
+
+A `.markdownlint.json` in the caller repository is picked up automatically by
+markdownlint-cli2.

@@ -23,3 +23,7 @@ jobs:
     # Keep this repository dogfooding the reusable workflow at the same commit.
     # A pinned self-reference creates a dependency update loop after every merge.
     uses: ./.github/workflows/spellcheck.yml
+
+  markdownlint:
+    # Keep this repository dogfooding the reusable workflow at the same commit.
+    uses: ./.github/workflows/markdownlint.yml
