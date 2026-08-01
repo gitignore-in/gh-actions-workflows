@@ -27,25 +27,16 @@ jobs:
     uses: gitignore-in/gh-actions-workflows/.github/workflows/actionlint.yml@main
 ```
 
-Callers can customize the checked files and ShellCheck behavior:
+The workflow follows actionlint's official Docker action pattern. It runs the
+official image with both the readable `1.7.12` tag and its immutable
+multi-platform digest pinned. With no arguments, actionlint uses its default
+repository discovery and enables its bundled ShellCheck integration.
 
-```yaml
-jobs:
-  actionlint:
-    uses: gitignore-in/gh-actions-workflows/.github/workflows/actionlint.yml@main
-    with:
-      files: ".github/workflows/*.yml action.yml"
-      shellcheck-enabled: false
-```
-
-The `files` input is passed unquoted to the shell so that glob patterns expand
-normally. Pass one or more space-separated shell glob patterns. Paths containing
-spaces are not supported. The workflow runs the official actionlint Docker image
-with both the readable `1.7.12` tag and its immutable multi-platform digest
-pinned. The caller workspace is mounted read-only into the container.
-
-The legacy `shellcheck: disabled` input is accepted for compatibility, but new
-callers should prefer `shellcheck-enabled: false`.
+The workflow no longer exposes `files`, `actionlint-version`, `shellcheck`, or
+`shellcheck-enabled` inputs. Callers upgrading from an older revision must
+remove those values from their `with:` block. A known caller currently passes
+`files` while referencing an older immutable workflow commit, so it is not
+affected until that reference is updated.
 
 ### Spellcheck
 
