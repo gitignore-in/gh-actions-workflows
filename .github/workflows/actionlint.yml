@@ -12,7 +12,7 @@ on:
         type: string
         default: ".github/workflows/*.yml"
       actionlint-version:
-        description: Repo-approved actionlint version tag.
+        description: Actionlint release version tag.
         required: false
         type: string
         default: "v1.7.12"
@@ -54,18 +54,8 @@ jobs:
             exit 2
           fi
 
-          actionlint_archive=
-          actionlint_sha256=
-          case "$ACTIONLINT_VERSION" in
-            "v1.7.12")
-              actionlint_archive="actionlint_1.7.12_linux_amd64.tar.gz"
-              actionlint_sha256="8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
-              ;;
-            *)
-              echo "::error::actionlint-version must be a repo-approved version. Supported versions: v1.7.12"
-              exit 2
-              ;;
-          esac
+          actionlint_release=${ACTIONLINT_VERSION#v}
+          actionlint_archive="actionlint_${actionlint_release}_linux_amd64.tar.gz"
 
           shellcheck_arg=()
           case "$ACTIONLINT_SHELLCHECK" in
@@ -98,7 +88,13 @@ jobs:
           actionlint_url="https://github.com/rhysd/actionlint/releases/download/$ACTIONLINT_VERSION/$actionlint_archive"
           curl --fail --show-error --location --proto '=https' --tlsv1.2 \
             "$actionlint_url" -o "$tmpdir/$actionlint_archive"
-          printf '%s  %s\n' "$actionlint_sha256" "$tmpdir/$actionlint_archive" | sha256sum --check --status
+          # Public attestations are intentionally fetched without a token so
+          # callers do not need to grant access to upstream attestations.
+          env -u GH_TOKEN -u GITHUB_TOKEN GH_CONFIG_DIR="$tmpdir/gh-config" \
+            gh attestation verify "$tmpdir/$actionlint_archive" \
+            --repo rhysd/actionlint \
+            --source-ref "refs/tags/$ACTIONLINT_VERSION" \
+            --signer-workflow rhysd/actionlint/.github/workflows/release.yaml
           tar -xzf "$tmpdir/$actionlint_archive" -C "$tmpdir" actionlint
 
           # ACTIONLINT_FILES is intentionally unquoted so existing caller globs keep expanding.
