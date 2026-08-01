@@ -40,15 +40,9 @@ jobs:
 
 The `files` input is passed unquoted to the shell so that glob patterns expand
 normally. Pass one or more space-separated shell glob patterns. Paths containing
-spaces are not supported. When overriding `actionlint-version`, pass an
-actionlint release tag such as `v1.7.12`. The workflow validates the tag format,
-downloads the matching release archive from `rhysd/actionlint`, and verifies its
-GitHub artifact attestation before executing it. The attestation must identify
-the requested tag in `rhysd/actionlint` and its release workflow as the source.
-Because the upstream attestations are public, verification is anonymous and
-callers do not need to grant access to upstream attestations. The workflow
-fetches the signed bundle from GitHub's public attestations API, then verifies
-it locally with the GitHub CLI.
+spaces are not supported. The workflow runs the official actionlint Docker image
+with both the readable `1.7.12` tag and its immutable multi-platform digest
+pinned. The caller workspace is mounted read-only into the container.
 
 The legacy `shellcheck: disabled` input is accepted for compatibility, but new
 callers should prefer `shellcheck-enabled: false`.

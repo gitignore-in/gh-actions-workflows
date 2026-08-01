@@ -11,11 +11,6 @@ on:
         required: false
         type: string
         default: ".github/workflows/*.yml"
-      actionlint-version:
-        description: Actionlint release version tag.
-        required: false
-        type: string
-        default: "v1.7.12"
       shellcheck:
         description: Legacy compatibility input. Set to disabled to run actionlint with -shellcheck=.
         required: false
@@ -44,18 +39,11 @@ jobs:
           ACTIONLINT_FILES: ${{ inputs.files }}
           ACTIONLINT_SHELLCHECK: ${{ inputs.shellcheck }}
           ACTIONLINT_SHELLCHECK_ENABLED: ${{ inputs.shellcheck-enabled }}
-          ACTIONLINT_VERSION: ${{ inputs.actionlint-version }}
         run: |
           set -eu
           set -o pipefail
 
-          if ! printf '%s' "$ACTIONLINT_VERSION" | grep -Eq '^v[0-9]+[.][0-9]+[.][0-9]+(-[0-9A-Za-z.-]+)?$'; then
-            echo "::error::actionlint-version must be an actionlint release tag like v1.7.12"
-            exit 2
-          fi
-
-          actionlint_release=${ACTIONLINT_VERSION#v}
-          actionlint_archive="actionlint_${actionlint_release}_linux_amd64.tar.gz"
+          actionlint_image="rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667"
 
           shellcheck_arg=()
           case "$ACTIONLINT_SHELLCHECK" in
@@ -82,38 +70,9 @@ jobs:
               ;;
           esac
 
-          tmpdir=$(mktemp -d)
-          trap 'rm -rf "$tmpdir"' EXIT
-
-          actionlint_url="https://github.com/rhysd/actionlint/releases/download/$ACTIONLINT_VERSION/$actionlint_archive"
-          curl --fail --show-error --location --proto '=https' --tlsv1.2 \
-            "$actionlint_url" -o "$tmpdir/$actionlint_archive"
-
-          actionlint_digest=$(sha256sum "$tmpdir/$actionlint_archive" | awk '{print $1}')
-          attestation_response="$tmpdir/actionlint-attestations.json"
-          attestation_bundle="$tmpdir/actionlint-attestations.jsonl"
-          curl --fail --show-error --location --proto '=https' --tlsv1.2 \
-            --header 'Accept: application/vnd.github+json' \
-            --header 'X-GitHub-Api-Version: 2022-11-28' \
-            "https://api.github.com/repos/rhysd/actionlint/attestations/sha256:$actionlint_digest" \
-            -o "$attestation_response"
-          if ! jq -e '.attestations | type == "array" and length > 0' \
-            "$attestation_response" >/dev/null; then
-            echo "::error::No public attestation was found for $actionlint_archive"
-            exit 1
-          fi
-          jq -c '.attestations[].bundle' "$attestation_response" >"$attestation_bundle"
-
-          # The signed bundles are fetched from the public API so callers do
-          # not need to grant access to upstream attestations.
-          env -u GH_TOKEN -u GITHUB_TOKEN GH_CONFIG_DIR="$tmpdir/gh-config" \
-            gh attestation verify "$tmpdir/$actionlint_archive" \
-            --bundle "$attestation_bundle" \
-            --repo rhysd/actionlint \
-            --source-ref "refs/tags/$ACTIONLINT_VERSION" \
-            --signer-workflow rhysd/actionlint/.github/workflows/release.yaml
-          tar -xzf "$tmpdir/$actionlint_archive" -C "$tmpdir" actionlint
-
           # ACTIONLINT_FILES is intentionally unquoted so existing caller globs keep expanding.
           # shellcheck disable=SC2086
-          "$tmpdir/actionlint" "${shellcheck_arg[@]}" -- $ACTIONLINT_FILES
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/workspace:ro" \
+            --workdir /workspace \
+            "$actionlint_image" "${shellcheck_arg[@]}" -- $ACTIONLINT_FILES
