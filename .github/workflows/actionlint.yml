@@ -12,7 +12,7 @@ on:
         type: string
         default: ".github/workflows/*.yml"
       actionlint-version:
-        description: actionlint version tag.
+        description: Repo-approved actionlint version tag.
         required: false
         type: string
         default: "v1.7.12"
@@ -39,11 +39,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
-      - name: Set up Go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
-        with:
-          go-version: "1.26"
-
       - name: Run actionlint
         env:
           ACTIONLINT_FILES: ${{ inputs.files }}
@@ -58,6 +53,19 @@ jobs:
             echo "::error::actionlint-version must be an actionlint release tag like v1.7.12"
             exit 2
           fi
+
+          actionlint_archive=
+          actionlint_sha256=
+          case "$ACTIONLINT_VERSION" in
+            "v1.7.12")
+              actionlint_archive="actionlint_1.7.12_linux_amd64.tar.gz"
+              actionlint_sha256="8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+              ;;
+            *)
+              echo "::error::actionlint-version must be a repo-approved version. Supported versions: v1.7.12"
+              exit 2
+              ;;
+          esac
 
           shellcheck_arg=()
           case "$ACTIONLINT_SHELLCHECK" in
@@ -84,6 +92,15 @@ jobs:
               ;;
           esac
 
+          tmpdir=$(mktemp -d)
+          trap 'rm -rf "$tmpdir"' EXIT
+
+          actionlint_url="https://github.com/rhysd/actionlint/releases/download/$ACTIONLINT_VERSION/$actionlint_archive"
+          curl --fail --show-error --location --proto '=https' --tlsv1.2 \
+            "$actionlint_url" -o "$tmpdir/$actionlint_archive"
+          printf '%s  %s\n' "$actionlint_sha256" "$tmpdir/$actionlint_archive" | sha256sum --check --status
+          tar -xzf "$tmpdir/$actionlint_archive" -C "$tmpdir" actionlint
+
           # ACTIONLINT_FILES is intentionally unquoted so existing caller globs keep expanding.
           # shellcheck disable=SC2086
-          go run "github.com/rhysd/actionlint/cmd/actionlint@$ACTIONLINT_VERSION" "${shellcheck_arg[@]}" -- $ACTIONLINT_FILES
+          "$tmpdir/actionlint" "${shellcheck_arg[@]}" -- $ACTIONLINT_FILES

@@ -41,8 +41,9 @@ jobs:
 The `files` input is passed unquoted to the shell so that glob patterns expand
 normally. Pass one or more space-separated shell glob patterns. Paths containing
 spaces are not supported. When overriding `actionlint-version`, pass an
-actionlint release tag such as `v1.7.12`. The workflow validates the tag format
-before invoking `go run`.
+actionlint release tag such as `v1.7.12`. The workflow validates the tag format,
+accepts only repo-approved versions, downloads the matching release archive
+from `rhysd/actionlint`, and verifies its SHA-256 before executing it.
 
 The legacy `shellcheck: disabled` input is accepted for compatibility, but new
 callers should prefer `shellcheck-enabled: false`.
