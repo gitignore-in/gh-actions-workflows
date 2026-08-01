@@ -46,7 +46,9 @@ downloads the matching release archive from `rhysd/actionlint`, and verifies its
 GitHub artifact attestation before executing it. The attestation must identify
 the requested tag in `rhysd/actionlint` and its release workflow as the source.
 Because the upstream attestations are public, verification is anonymous and
-callers do not need to grant access to upstream attestations.
+callers do not need to grant access to upstream attestations. The workflow
+fetches the signed bundle from GitHub's public attestations API, then verifies
+it locally with the GitHub CLI.
 
 The legacy `shellcheck: disabled` input is accepted for compatibility, but new
 callers should prefer `shellcheck-enabled: false`.
