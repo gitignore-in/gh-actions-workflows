@@ -7,10 +7,11 @@ on:
         description: >-
           File glob(s) passed to markdownlint-cli2. The value is word-split
           and glob-expanded by the shell, so multiple globs can be separated
-          by spaces. Paths containing spaces are not supported.
+          by spaces. Paths containing spaces are not supported. The default
+          recurses into subdirectories.
         required: false
         type: string
-        default: "*.md"
+        default: "**/*.md"
       markdownlint-version:
         description: markdownlint-cli2 release version.
         required: false
@@ -41,6 +42,7 @@ jobs:
         run: |
           set -eu
           set -o pipefail
+          shopt -s globstar
 
           if ! printf '%s' "$MARKDOWNLINT_VERSION" | grep -Eq '^[0-9]+[.][0-9]+[.][0-9]+$'; then
             echo "::error::markdownlint-version must be a release version like 0.18.1"
@@ -48,5 +50,6 @@ jobs:
           fi
 
           # MARKDOWNLINT_GLOBS is intentionally unquoted so caller globs keep expanding.
+          # globstar is enabled so the "**/*.md" default recurses into subdirectories.
           # shellcheck disable=SC2086
           npx --yes "markdownlint-cli2@$MARKDOWNLINT_VERSION" $MARKDOWNLINT_GLOBS
