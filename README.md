@@ -63,17 +63,6 @@ jobs:
       config: .github/typos.toml
 ```
 
-## Development
-
-This repository dogfoods its reusable workflows through `.github/workflows/ci.yml`.
-
-Local checks:
-
-```sh
-actionlint
-typos
-```
-
 ### Markdownlint
 
 ```yaml
@@ -91,3 +80,14 @@ jobs:
 
 A `.markdownlint.json` in the caller repository is picked up automatically by
 markdownlint-cli2.
+
+## Development
+
+This repository dogfoods its reusable workflows through `.github/workflows/ci.yml`.
+
+Local checks:
+
+```sh
+actionlint
+typos
+```
